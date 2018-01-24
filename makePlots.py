@@ -12,58 +12,70 @@ rcParams['axes.labelsize'] = 20
 rcParams.update({'figure.autolayout': True})
 import matplotlib.patches as mpatches
 
-data = np.loadtxt('uo2/data').T
-K = data[0]
-D = data[1]
-R = data[2]
-T = data[3]
-H = data[4] * 2
-M = data[5]
+def makePlot(nControl):
+    dataIn = np.loadtxt('data-{}-in'.format(nControl)).T
+    dataOut = np.loadtxt('data-{}-out'.format(nControl)).T
 
-hmin, hmax = 5, 50
-tmin, tmax = 2, 20
-rmin, rmax = 2, 20
+    K = dataIn[0]
+    D = dataIn[1]
+    R = dataIn[2]
+    T = dataIn[3]
+    H = dataIn[4] * 2
+    M = dataIn[5]
 
-rgb = [((R[i]-rmin)/rmax, (H[i]-hmin)/hmax, (T[i]-tmin)/tmax) for i in range(len(K))]
-red_patch = mpatches.Patch(color='red', label='Foam Radius')
-green_patch = mpatches.Patch(color='green', label='Foam Height')
-blue_patch = mpatches.Patch(color='blue', label='Reflector Thickness')
+    K_out = dataOut[0]
+    D_out = dataOut[1]
 
-# Radius plot
-plt.scatter(R, K, c=rgb)
-plt.ylabel('k')
-plt.xlabel('radius [cm]')
-plt.xlim([0, rmax])
-plt.legend(handles=[red_patch, green_patch, blue_patch])
-plt.savefig('k-radius.pdf')
-plt.clf()
+    hmin, hmax = 5, 50
+    tmin, tmax = 2, 20
+    rmin, rmax = 2, 20
 
-# Thickness plot
-plt.scatter(T, K, c=rgb)
-plt.ylabel('k')
-plt.xlim([0, tmax])
-plt.xlabel('reflector thickness [cm]')
-plt.legend(handles=[red_patch, green_patch, blue_patch])
-plt.savefig('k-thick.pdf')
-plt.clf()
+    mask = (K < 1.0) * (1.0 < K_out)
 
-# Height plot
-plt.scatter(H, K, c=rgb)
-plt.ylabel('k')
-plt.xlim([0, hmax])
-plt.xlabel('height [cm]')
-plt.legend(handles=[red_patch, green_patch, blue_patch])
-plt.savefig('k-height.pdf')
-plt.clf()
+    rgb = [((R[i]-rmin)/rmax, (H[i]-hmin)/hmax, (T[i]-tmin)/tmax) for i in range(len(K)) if mask[i]]
+    red_patch = mpatches.Patch(color='red', label='Foam Radius')
+    green_patch = mpatches.Patch(color='green', label='Foam Height')
+    blue_patch = mpatches.Patch(color='blue', label='Reflector Thickness')
 
-# Mass plot
-plt.scatter(M / 1000, K, c=rgb)
-plt.ylabel('k')
-plt.xlabel('mass [kg]')
-plt.xlim([0.0, 6000])
-plt.legend(handles=[red_patch, green_patch, blue_patch])
-plt.savefig('k-mass.pdf')
-plt.clf()
+    # Radius plot
+    plt.scatter(R[mask], K[mask], c=rgb)
+    plt.ylabel('k')
+    plt.xlabel('radius [cm]')
+    plt.xlim([0, rmax])
+    plt.legend(handles=[red_patch, green_patch, blue_patch])
+    plt.savefig('k-radius-{}.pdf'.format(nControl))
+    plt.clf()
 
-i = np.argmin(M[K > 1.0])
-print data[:,K > 1.0][:,i]
+    # Thickness plot
+    plt.scatter(T[mask], K[mask], c=rgb)
+    plt.ylabel('k')
+    plt.xlim([0, tmax])
+    plt.xlabel('reflector thickness [cm]')
+    plt.legend(handles=[red_patch, green_patch, blue_patch])
+    plt.savefig('k-thick-{}.pdf'.format(nControl))
+    plt.clf()
+
+    # Height plot
+    plt.scatter(H[mask], K[mask], c=rgb)
+    plt.ylabel('k')
+    plt.xlim([0, hmax])
+    plt.xlabel('height [cm]')
+    plt.legend(handles=[red_patch, green_patch, blue_patch])
+    plt.savefig('k-height-{}.pdf'.format(nControl))
+    plt.clf()
+
+    # Mass plot
+    plt.scatter(M[mask] / 1000, K[mask], c=rgb)
+    plt.ylabel('k')
+    plt.xlabel('mass [kg]')
+    plt.xlim([0.0, 6000])
+    plt.legend(handles=[red_patch, green_patch, blue_patch])
+    plt.savefig('k-mass-{}.pdf'.format(nControl))
+    plt.clf()
+
+    i = np.argmin(M[K_out > 1.0])
+    print 'k={}, d={}, r={}, t={}, h={}, m={}'.format(*dataIn[:,K_out > 1.0][:,i])
+    print 'k_out={}'.format(K_out[K_out > 1.0][i])
+
+for nControl in [12, 4, 8, 12]:
+    makePlot(nControl)
